@@ -24,24 +24,30 @@ Const err1 As Variant = vbNewLine & vbNewLine & _
                         "Workbook name is not the same. Please try again."
 
 ' Ctrl + '/' to quicly comment
+' 
+
 Private Sub UserForm_Initialize()
 
     Dim vWorkbook As Workbook
 
     Application.ScreenUpdating = False
     
+    ' Gets the current Workbook name
     Range("E2").Value = Left(ThisWorkbook.Name, Len(ThisWorkbook.Name) - 5)
 
+    ' This will clear the combobox values of the last Workbook names used.
     fileC.Clear
     fileJ.Clear
 
+    ' Will get all the open workbooks names and put them in the ComboBoxes.
     For Each vWorkbook In Workbooks
         If vWorkbook.Name <> ThisWorkbook.Name Then
             fileC.AddItem vWorkbook.Name
             fileJ.AddItem vWorkbook.Name
         End If
     Next
-        
+    
+    ' This will get the Converter tool name and store it as a variable
     On Error Resume Next
     Set wb = Workbooks(Range("E2").Value)
     
@@ -58,12 +64,16 @@ Private Sub UserForm_Initialize()
     wb.Activate
     ws.Select
 
+    ' Will clear the last used workbook names.
     Range("C2").Value = ""
     Range("D2").Value = ""
     
+    ' //TODO Can deleted after debuggin is done 
     fileC.ListIndex = 0
     fileJ.ListIndex = 0
     
+    ' This will disable, so that the users can't click anything else.
+    ' Now everything is in the right order
     CmdLoad.Enabled = True
     CmdSheets.Enabled = False
     segmentbx.Enabled = False
@@ -74,7 +84,7 @@ Private Sub UserForm_Initialize()
     
 End Sub
 
-Private Sub CmdLoad_Click()
+Private Sub CmdLoad_Click() 'This will start the first process.
 
     Application.ScreenUpdating = False
     
@@ -91,11 +101,14 @@ Private Sub CmdLoad_Click()
         Exit Sub
     End If
     
+    ' Stores the files names, for later porpures
     Range("C2").Value = fileJ.Value
     Range("D2").Value = fileC.Value
-    
+
+    ' Clears the last used segments, if any.
     sheetsBx.Clear
     
+    'Sets the variable for workbook JUYO File
     On Error Resume Next
     Set wb1 = Workbooks(Range("C2").Value)
     
@@ -112,6 +125,7 @@ Private Sub CmdLoad_Click()
         .Unprotect
     End With
     
+    ' Shows all the sheets in the listbox, so the users can select them
     For Each ws1 In wb1.Worksheets
         ws1.Visible = xlSheetVisible
         Me.sheetsBx.AddItem ws1.Name
@@ -120,8 +134,9 @@ Private Sub CmdLoad_Click()
     wb.Activate
     ws.Select
     
-    '# expand the userform
+    '// TODO Let the userform expand itself
     
+    ' Enables extra buttons
     CmdSheets.Enabled = True
     segmentbx.Enabled = True
     OptionButton1.Enabled = True
@@ -131,7 +146,7 @@ Private Sub CmdLoad_Click()
 
 End Sub
 
-Private Sub CmdSheets_Click() 'THIS WILL BE THE STORE SHEET
+Private Sub CmdSheets_Click() 'Here the non-selected sheets will be deleted.
 
     Application.ScreenUpdating = False
     
@@ -159,11 +174,11 @@ Private Sub CmdSheets_Click() 'THIS WILL BE THE STORE SHEET
     
     Application.ScreenUpdating = True
     
-    Call GetRange
+    Call GetRangeSegments
 
 End Sub
 
-Public Sub GetRange()
+Public Sub GetRangeSegments() 'Here the names of the segments will be selected
 
     Dim rng As Range
     Dim cel As Range
@@ -174,14 +189,14 @@ Public Sub GetRange()
     
     'Get Cell adress with values
     On Error Resume Next
-        Set rng = Application.InputBox(Title:="Please select a range", Prompt:="Select range", Type:=8)
+        Set rng = Application.InputBox(Title:="Please select a range with all the segments names.", Prompt:="Select range of segments.", Type:=8)
     On Error GoTo 0
 
     If rng Is Nothing Then Exit Sub
     
     'Only let multiple selection through, otherwise it can be not wise.
     If rng.Cells.count = 1 Then
-        MsgBox "You�ve selected only one cell." & "Please select multiple cells.", vbOKOnly
+        MsgBox "You've selected only one cell." & "Please select multiple cells containing segments.", vbOKOnly
         Exit Sub
     End If
 
