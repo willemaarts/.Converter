@@ -20,6 +20,7 @@ Public wb As Workbook, wb1 As Workbook, wb2 as Workbook
 Public ws As Worksheet, ws1 As Worksheet, ws2 as Workbook
 Public rng As Range
 Public cel As Range
+Public Y as Integer
 
 Public fullRange As Range
 
@@ -31,7 +32,14 @@ Const err1 As Variant = vbNewLine & vbNewLine & _
 Private Sub UserForm_Initialize()
 
     Dim vWorkbook As Workbook
+    dim x as Integer
     
+    If Range("E1").value <> "EXCEL FILE" Then
+        MsgBox "Please make sure that the converter file is active (by clicking on it)"
+        me.hide
+        exit sub
+    end if
+
     ' Gets the current Workbook name
     Range("E2").Value = Left(ThisWorkbook.Name, Len(ThisWorkbook.Name) - 5)
 
@@ -65,6 +73,12 @@ Private Sub UserForm_Initialize()
     wb.Activate
     ws.Select
 
+    for x = 0 to 3
+        me.yearBx.AddItem Year(Now()) + x
+    next x
+
+    yearBx.ListIndex = 0
+    
     ' Will clear the last used workbook names.
     Range("C2").Value = ""
     Range("D2").Value = ""
@@ -91,9 +105,9 @@ End Sub
 
 Private Sub CmdLoad_Click() 'This will start the first process.
 
-    Dim iSegment() As Variant
     Dim lastColumn As Long
     Dim iNum As Integer
+    Dim iSegment() As Variant
 
     wb.Activate
     ws.Select
@@ -193,31 +207,127 @@ End Sub
 
 Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
 
+    Dim i As Integer, str As String, Value As String
+    Dim a As Integer, b As Integer, item As Variant
+    Dim lookup_value As String
+    Dim fuzzyMonths() As Variant
+
+    ' Select the correct workbook + sheets
     wb.Activate
     ws.Select
     
     Dim iSegments() As Variant
-    Dim i As Integer, count As Integer, iNum As Integer
+    Dim x As Integer, count As Integer, iNum As Integer
     
+    ' This For Loop will delete all non-selected sheets.
     count = 1
-    For i = 0 To sheetsBx.ListCount - 1
-        If sheetsBx.Selected(i) = True Then
+    For x = 0 To sheetsBx.ListCount - 1
+        If sheetsBx.Selected(x) = True Then
             ReDim Preserve iSegments(count)
-            iSegments(count) = sheetsBx.List(i)
+            iSegments(count) = sheetsBx.List(x)
             count = count + 1
         End If
-    Next i
+    Next x
 
+    ' Exit sub if no sheets are selected.
     If count = 1 Then
         MsgBox "Select at least 1 sheet."
         exit sub
     End if
 
+    ' Clears the whole listbox so it can be populated again
     sheetsBx.Clear
     
+    'Dictonary for the months
+    fuzzyMonths = Array("may", "May", "May", "may", _
+                    "july", "July", "Jul", "jul", _
+                    "june", "June", "Jun", "jun", _
+                    "march", "March", "Mar", "mar", _
+                    "april", "April", "Apr", "apr", _
+                    "august", "August", "Aug", "Aug", _
+                    "january", "January", "Jan", "jan", _
+                    "october", "October", "Oct", "oct", _
+                    "february", "February", "Feb", "feb", _
+                    "december", "December", "Dec", "dec", _
+                    "november", "November", "Nov", "nov", _               
+                    "september", "September", "Sep", "sep", "Sept", "sept")
+                    
+                    
+                    
+
+    ' Here the selected segments that where selected will be added again
+    ' Futhermore, with Fuzzy Seach, the months will be added.
     On Error Resume Next
     For iNum = 1 To UBound(iSegments)
         Me.sheetsBx.AddItem iSegments(iNum)
+
+        lookup_value = iSegments(iNum)
+
+            For Each item In fuzzyMonths
+        
+            str = item
+            
+            For i = 1 To Len(lookup_value)
+                If InStr(item, Mid(lookup_value, i, 1)) > 0 Then
+                    a = a + 1
+                    item = Mid(item, 1, InStr(item, Mid(lookup_value, i, 1)) - 1) & Mid(item, InStr(item, Mid(lookup_value, i, 1)) + 1, 9999)
+                End If                
+            Next
+            
+            a = a - Len(item)
+            
+            If a > b Then
+                b = a '1
+                Value = str
+            End If
+            
+            a = 0
+            
+        Next item
+        
+        Debug.Print Value
+        
+        Select Case Value
+            Case "january", "January", "Jan", "jan"
+                Debug.Print "january"
+                me.monthsBx.AddItem value
+            Case "february", "February", "Feb", "feb"
+                Debug.Print "february"
+                me.monthsBx.AddItem value
+            Case "march", "March", "Mar", "mar"
+                Debug.Print "march"
+                me.monthsBx.AddItem value
+            Case "april", "April", "Apr", "apr"
+                Debug.Print "april"
+                me.monthsBx.AddItem value
+            Case "may", "May", "May", "may"
+                Debug.Print "may"
+                me.monthsBx.AddItem value
+            Case "june", "June", "Jun", "jun"
+                Debug.Print "june"
+                me.monthsBx.AddItem value
+            Case "july", "July", "Jul", "jul"
+                Debug.Print "july"
+                me.monthsBx.AddItem value
+            Case "august", "August", "Aug", "aug"
+                Debug.Print "august"
+                me.monthsBx.AddItem value
+            Case "september", "September", "Sep", "sep", "Sept", "sept"
+                Debug.Print "september"
+                me.monthsBx.AddItem value
+            Case "october", "October", "Oct", "oct"
+                Debug.Print "october"
+                me.monthsBx.AddItem value
+            Case "november", "November", "Nov", "nov"
+                Debug.Print "november"
+                me.monthsBx.AddItem value
+            Case "december", "December", "Dec", "dec"
+                Debug.Print "december"
+                me.monthsBx.AddItem value
+        End Select
+
+        b = 0
+
     Next iNum
     
     Set ws1 = wb1.Worksheets(iSegments(1))
@@ -271,7 +381,7 @@ Private Sub CmdSegments_Click() 'Get the names of the segments.
     Me.Show
 
 End Sub  
-
+'// TODO Find a way when there is only ADR and no REV
 Private Sub cmdTerminology_Click() 'This will get the names of RN and REV
 
     'Temporarily Hide Userform
@@ -393,8 +503,10 @@ Private Sub CmdConvert_Click() ' Here will be the final space before converting 
         Call CmdStoreSegments_Click
     End If
 
+    '//TODO store the iMonth and iSegment array first!!!
+
     ' Start converting here.
-    Call main
+    'Call main
 
 End Sub
 
@@ -406,14 +518,46 @@ Private sub main()
     Dim StartTime   As Double
     Dim SecondsElapsed As Double
 
+    Dim x as long
+    Dim iData() As Variant
+    Dim iNum As Integer, iNum1 As Integer, iNum2 As Integer
+    Dim match_1 as variable, match_1 as variable, match_1 as variable
+
     StartTime = Timer
 
-    '// TODO start converting program
+    '//TODO start converting program
 
     wb.activate
     ws.select
 
+    With wb1
+        .Activate
+        .Unprotect
+    End With
 
+    '//TODO First get the array back from the sheets!! (iMonth and iSegment)
+
+    'Here start the proces of populating the array
+    For iNum = 1 to UBound(iMonth)
+
+        On error resume next
+        Set ws1 = wb1.Worksheets(iMonth(iNum, 1))
+    
+        Debug.Print err.Number & " | " & err.Description
+
+        If err.Number <> 0 Then
+            If err.Number = 9 Then
+                MsgBox "Month: '" & iMonth(iNum, 1) & "'. Is not recognised in as sheet in: " & wb1.Name & vbNewLine & _
+                    vbNewLine & "Please try again or contact the admin.", vbCritical
+                Exit Sub
+            End If
+        End If
+
+        ws1.Visible = xlSheetVisible
+        ws1.Select
+
+        For iNum1 = 1 To UBound(iSegment)
+            mat
 
 End sub
 
