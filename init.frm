@@ -31,8 +31,6 @@ Const err1 As Variant = vbNewLine & vbNewLine & _
 Private Sub UserForm_Initialize()
 
     Dim vWorkbook As Workbook
-
-    Application.ScreenUpdating = False
     
     ' Gets the current Workbook name
     Range("E2").Value = Left(ThisWorkbook.Name, Len(ThisWorkbook.Name) - 5)
@@ -74,22 +72,24 @@ Private Sub UserForm_Initialize()
     ' //TODO Can deleted after debuggin is done
     fileC.ListIndex = 0
     fileJ.ListIndex = 1
+
+    me.label13.Top =  1000
     
     ' This will disable, so that the users can't click anything else.
     ' Now everything is in the right order
     CmdLoad.Enabled = True
     CmdSheets.Enabled = False
     segmentbx.Enabled = False
+    CmdSegments.Enabled = False
+    cmdTerminology.Enabled = False
+    CmdStoreSegments.Enabled = False
+    CmdLastUsedSeg.Enabled = False
     OptionButton1.Enabled = False
     OptionButton2.Enabled = False
-    
-    Application.ScreenUpdating = True
     
 End Sub
 
 Private Sub CmdLoad_Click() 'This will start the first process.
-
-    Application.ScreenUpdating = False
 
     Dim iSegment() As Variant
     Dim lastColumn As Long
@@ -189,14 +189,10 @@ Private Sub CmdLoad_Click() 'This will start the first process.
     wb.Activate
     ws.Select
 
-    Application.ScreenUpdating = True
-
 End Sub
 
 Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
 
-    Application.ScreenUpdating = False
-    
     wb.Activate
     ws.Select
     
@@ -212,6 +208,11 @@ Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
         End If
     Next i
 
+    If count = 1 Then
+        MsgBox "Select at least 1 sheet."
+        exit sub
+    End if
+
     sheetsBx.Clear
     
     On Error Resume Next
@@ -220,11 +221,17 @@ Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
     Next iNum
     
     Set ws1 = wb1.Worksheets(iSegments(1))
-    
-    Application.ScreenUpdating = True
-    
-    'Call GetRangeSegments
 
+    if me.segmentJuyobx.ListCount <> me.segmentbx.ListCount then
+        me.label13.ForeColor = RGB(255, 0, 0) ' red
+    Else
+        me.label13.Top =  1000
+    End if
+
+    CmdSegments.Enabled = True
+    CmdLastUsedSeg.Enabled = True
+    cmdTerminology.Enabled = True
+    CmdStoreSegments.Enabled = True
 End Sub
 
 Private Sub CmdSegments_Click() 'Get the names of the segments.
@@ -233,8 +240,6 @@ Private Sub CmdSegments_Click() 'Get the names of the segments.
     Me.Hide
     segmentbx.Clear
 
-    Application.ScreenUpdating = True
-    
     wb1.Activate
     ws1.Select
     
@@ -267,13 +272,11 @@ Private Sub CmdSegments_Click() 'Get the names of the segments.
 
 End Sub  
 
-Private Sub cmdTerminology_Click()
+Private Sub cmdTerminology_Click() 'This will get the names of RN and REV
 
     'Temporarily Hide Userform
     Me.Hide
     terminologybx.Clear
-
-    Application.ScreenUpdating = True
     
     wb1.Activate
     ws1.Select
@@ -307,6 +310,112 @@ Private Sub cmdTerminology_Click()
 
 End Sub
 
+Private Sub CmdLastUsedSeg_Click() ' Will retreive last segments used
+
+    Dim iMonth() as Variant
+    Dim iNum as Integer
+    Dim lastrow as Long
+
+    segmentbx.Clear
+
+    wb.Activate
+    ws.select
+
+    lastrow = Cells(Rows.count, "B").End(xlUp).Row
+
+    iMonth = Range("B2:B" & lastrow)
+
+    for iNum = 1 to UBound(iMonth)
+        Me.segmentbx.AddItem iMonth(iNum, 1)
+    Next iNum
+
+End Sub
+
+Private Sub CmdStoreSegments_Click() ' This will store the segments
+
+    Dim x as Integer
+    Dim lastrow as long
+
+    wb.Activate
+    ws.select
+
+    lastrow = Cells(Rows.count, "B").End(xlUp).Row
+    
+    Range("B2:B" & lastrow).ClearContents
+    Range("B2").Select
+    
+    For x = 0 To Me.segmentbx.ListCount - 1
+        Me.segmentbx.Selected(x) = True
+        If Me.segmentbx.Selected(x) = True Then
+            ActiveCell = Me.segmentbx.List(x)
+            ActiveCell.Offset(1, 0).Select
+        End If
+    Next x
+
+End sub
+
+Private Sub segmentbx_Change()
+
+    if me.segmentJuyobx.ListCount <> me.segmentbx.ListCount then
+        me.label13.ForeColor = RGB(255, 0, 0) ' red
+    Else
+        me.label13.Top =  1000
+    End if
+
+End Sub
+
+Private Sub CmdConvert_Click() ' Here will be the final space before converting the numbers
+
+    Dim msg as Variant
+    dim answer as Integer
+
+    msg = ("Segments are not evenly distributed! Make sure that the segments in both listboxes are 100% correct. " & _
+            vbNewLine & vbNewLine & _
+            "Segments JUYO count  : " & Me.segmentJuyobx.ListCount & vbNewLine & _
+            "Segments Client count : " & Me.segmentbx.ListCount & _
+            vbNewLine & vbNewLine & _
+            "If you want to continue with uneven matching segments press 'Yes', otherwise press 'no'" & vbNewLine & _
+            "NOTE: the segments that don't have a match will have no data here and in Launchpad.")
+    
+    If Me.segmentJuyobx.ListCount = Me.segmentbx.ListCount Then
+        Debug.Print "COUNT Segments: " & Me.segmentJuyobx.ListCount & " | " & Me.segmentbx.ListCount
+    Else
+        answer = MsgBox (msg, vbCritical + vbYesNo + vbDefaultButton2, "Segments are Not correct!")
+        if answer = vbyes then
+            Debug.Print "COUNT Segments: " & Me.segmentJuyobx.ListCount & " | " & Me.segmentbx.ListCount
+        Else
+            msgbox "Please make sure all the segments have a 100% match"
+            Exit Sub
+        end if
+    End If
+
+    If CheckBox2.Value = True Then
+        Call CmdStoreSegments_Click
+    End If
+
+    ' Start converting here.
+    Call main
+
+End Sub
+
+Private sub main()
+
+    'Temporarily Hide Userform
+    Me.Hide
+
+    Dim StartTime   As Double
+    Dim SecondsElapsed As Double
+
+    StartTime = Timer
+
+    '// TODO start converting program
+
+    wb.activate
+    ws.select
+
+
+
+End sub
 
 '-------------------------------------------------------------------------------------
 '-------------------------------------------------------------------------------------
@@ -324,6 +433,7 @@ Private Sub CmdRight_Click()
     Dim x As Integer
     
     For x = 0 To Me.segmentbx.ListCount - 1
+        on error resume next
         If Me.segmentbx.Selected(x) = True Then
             ListBox4.AddItem Me.segmentbx.List(x)
             segmentbx.RemoveItem x
@@ -340,6 +450,9 @@ End Sub
 Private Sub CmdUp_Click()
     
     Application.ScreenUpdating = False
+
+    Dim curIndex As Integer, othIndex As Integer
+    Dim curVal As Variant, othVal As Variant
     
     With Me.segmentbx
         
@@ -356,6 +469,8 @@ Private Sub CmdUp_Click()
         .List(curIndex) = othVal
         
         .Selected(othIndex) = True
+        .ListIndex = othIndex
+        .Selected(curIndex) = False
         
     End With
     
@@ -366,6 +481,9 @@ End Sub
 Private Sub CmdDown_Click()
     
     Application.ScreenUpdating = False
+
+    Dim curIndex As Integer, othIndex As Integer
+    Dim curVal As Variant, othVal As Variant
     
     With Me.segmentbx
         
@@ -380,8 +498,10 @@ Private Sub CmdDown_Click()
         
         .List(othIndex) = curVal
         .List(curIndex) = othVal
-        
+    
         .Selected(othIndex) = True
+        .ListIndex = othIndex
+        .Selected(curIndex) = False
         
     End With
     
@@ -396,6 +516,8 @@ End Sub
 Private Sub CmdLeft_Click()
     
     Application.ScreenUpdating = False
+
+    Dim itemIndex As Variant
     
     'Move selected items to the Left
     
