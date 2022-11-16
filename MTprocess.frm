@@ -260,6 +260,7 @@ Private Sub CmdStoreSegments_Click()        'Store segments
     Application.ScreenUpdating = True
     
 End Sub
+
 Private Sub CmdMonths_Click()
     
     Application.ScreenUpdating = False
