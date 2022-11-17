@@ -22,7 +22,7 @@ Public rng As Range
 Public cel As Range
 Public Y as Integer
 
-Public fullRange As Range
+Public fullRange As Range, fullRange1 as range
 
 Const err1 As Variant = vbNewLine & vbNewLine & _
                         "Workbook name is not the same. Please try again."
@@ -263,7 +263,7 @@ Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
 
         lookup_value = iSegments(iNum)
 
-            For Each item In fuzzyMonths
+        For Each item In fuzzyMonths
         
             str = item
             
@@ -289,41 +289,29 @@ Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
         
         Select Case Value
             Case "january", "January", "Jan", "jan"
-                Debug.Print "january"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "january"
             Case "february", "February", "Feb", "feb"
-                Debug.Print "february"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "february"
             Case "march", "March", "Mar", "mar"
-                Debug.Print "march"
                 me.monthsBx.AddItem value
             Case "april", "April", "Apr", "apr"
-                Debug.Print "april"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "march"
             Case "may", "May", "May", "may"
-                Debug.Print "may"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "may"
             Case "june", "June", "Jun", "jun"
-                Debug.Print "june"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "june"
             Case "july", "July", "Jul", "jul"
-                Debug.Print "july"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "july"
             Case "august", "August", "Aug", "aug"
-                Debug.Print "august"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "august"
             Case "september", "September", "Sep", "sep", "Sept", "sept"
-                Debug.Print "september"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "september"
             Case "october", "October", "Oct", "oct"
-                Debug.Print "october"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "october"
             Case "november", "November", "Nov", "nov"
-                Debug.Print "november"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "november"
             Case "december", "December", "Dec", "dec"
-                Debug.Print "december"
-                me.monthsBx.AddItem value
+                me.monthsBx.AddItem "december"
         End Select
 
         b = 0
@@ -373,6 +361,8 @@ Private Sub CmdSegments_Click() 'Get the names of the segments.
             Me.segmentbx.AddItem cel.Value
         End If
     Next
+
+    set fullRange = rng
     
     wb.Activate
     ws.select
@@ -412,6 +402,8 @@ Private Sub cmdTerminology_Click() 'This will get the names of RN and REV
         End If
     Next
 
+    set fullRange1 = rng
+
     wb.Activate
     ws.select
     
@@ -450,7 +442,8 @@ Private Sub CmdStoreSegments_Click() ' This will store the segments
     ws.select
 
     lastrow = Cells(Rows.count, "B").End(xlUp).Row
-    
+
+    '//FIXME is nothing is loaded, the column will be deleted.
     Range("B2:B" & lastrow).ClearContents
     Range("B2").Select
     
@@ -474,7 +467,7 @@ Private Sub segmentbx_Change()
 
 End Sub
 
-Private Sub CmdConvert_Click() ' Here will be the final space before converting the numbers
+Private Sub CmdConvert_Click() ' This is the last sub before converting
 
     Dim msg as Variant
     dim answer as Integer
@@ -503,10 +496,7 @@ Private Sub CmdConvert_Click() ' Here will be the final space before converting 
         Call CmdStoreSegments_Click
     End If
 
-    '//TODO store the iMonth and iSegment array first!!!
-
-    ' Start converting here.
-    'Call main
+    Call main
 
 End Sub
 
@@ -518,37 +508,46 @@ Private sub main()
     Dim StartTime   As Double
     Dim SecondsElapsed As Double
 
-    Dim x as long
+    'Dim x as long
     Dim iData() As Variant
+    Dim iSegments() As Variant
+    Dim iMonths() As Variant
+    Dim iDays() as Variant, iData1() as Variant
+    Dim iTerm() As Variant
+    Dim Loc As Range
+    dim mDay as long
+    Dim x As Integer, count As Integer
     Dim iNum As Integer, iNum1 As Integer, iNum2 As Integer
-    Dim match_1 as variable, match_1 as variable, match_1 as variable
+    Dim match_1 As Variant, match_2 As Variant, match_3 As Variant
 
     StartTime = Timer
 
-    '//TODO start converting program
+    wb.Activate
+    ws.Select
 
-    wb.activate
-    ws.select
+    iSegments() = segmentbx.List
+    iMonths() = sheetsBx.List
+    iTerm() = terminologybx.List
+    iDays() = monthsBx.List
 
     With wb1
         .Activate
         .Unprotect
     End With
 
-    '//TODO First get the array back from the sheets!! (iMonth and iSegment)
-
     'Here start the proces of populating the array
-    For iNum = 1 to UBound(iMonth)
+    For iNum = 0 To UBound(iMonths)
 
-        On error resume next
-        Set ws1 = wb1.Worksheets(iMonth(iNum, 1))
+        On Error Resume Next
+        Set ws1 = wb1.Worksheets(iMonths(iNum, 0))
     
         Debug.Print err.Number & " | " & err.Description
 
         If err.Number <> 0 Then
             If err.Number = 9 Then
-                MsgBox "Month: '" & iMonth(iNum, 1) & "'. Is not recognised in as sheet in: " & wb1.Name & vbNewLine & _
+                MsgBox "Month: '" & iMonths(iNum, 1) & "'. Is not recognised in as sheet in: " & wb1.Name & vbNewLine & _
                     vbNewLine & "Please try again or contact the admin.", vbCritical
+                    err.clear
                 Exit Sub
             End If
         End If
@@ -556,8 +555,135 @@ Private sub main()
         ws1.Visible = xlSheetVisible
         ws1.Select
 
-        For iNum1 = 1 To UBound(iSegment)
-            mat
+        Select Case iDays(iNum, 0)
+            Case "january", "march", "may", "july", "august", "october", "december": mDay = 31
+            Case "april", "june", "september", "november": mDay = 30
+            Case "february": mDay = 28
+            Case Else
+                Debug.Print "No Month"
+                mDay = 31 
+        End Select
+
+        With ws1.UsedRange
+
+            Set Loc = .Cells.Find(What:=iTerm(0, 0)) 'Change to variable (iNum1,0)
+            
+            count = 0
+
+            If Not Loc Is Nothing Then
+                
+                Do Until count = UBound(iSegments) + 1
+                    
+                    if OptionButton6 = true then
+                    'Columns stored, so loc and fullrange1 must be row
+
+                        If Loc.Row = fullRange1.Row Then
+                            
+                            Debug.Print Loc.Address
+                            
+                            ReDim Preserve iData(x)
+                            iData(x) = Application.WorksheetFunction.Transpose(Range(Cells(loc.Row + 1, loc.Column), Cells(loc.Row + mDay, loc.Column)))
+                                    
+                            x = x + 1
+                            
+                            Set Loc = .FindNext(Loc)
+                            count = count + 1
+                        Else
+                            Debug.Print Loc.Address
+                            Set Loc = .FindNext(Loc)
+                        End If
+                    
+                    Else
+
+                        If Loc.Column = fullRange1.Column Then
+
+                            Debug.Print Loc.Address
+
+                            ReDim Preserve iData(x)
+                            iData(x) = Application.WorksheetFunction.Transpose(Range(Cells(loc.Row, loc.Column +1), Cells(loc.Row, loc.Column + mDay)))
+                            
+                            x = x + 1
+
+                            Set Loc = .FindNext(Loc)
+                            count = count + 1
+                        Else
+                            Debug.Print Loc.Address
+                            Set Loc = .FindNext(Loc)
+                        End If
+
+                    End if
+
+                Loop
+            
+            End If
+        
+        End With
+        
+        Set Loc = Nothing
+        set x = nothing
+
+        With ws1.UsedRange
+
+            Set Loc = .Cells.Find(What:=iTerm(1, 0)) 'Change to variable (iNum1,0)
+            
+            count = 0
+
+            If Not Loc Is Nothing Then
+                
+                Do Until count = UBound(iSegments) + 1
+                    
+                    if OptionButton6 = true then
+                    'Columns stored, so loc and fullrange1 must be row
+
+                        If Loc.Row = fullRange1.Row Then
+                            
+                            Debug.Print Loc.Address
+                            
+                            ReDim Preserve iData1(x)
+                            iData1(x) = Application.WorksheetFunction.Transpose(Range(Cells(loc.Row + 1, loc.Column), Cells(loc.Row + mDay, loc.Column)))
+                                    
+                            x = x + 1
+                            
+                            Set Loc = .FindNext(Loc)
+                            count = count + 1
+                        Else
+                            Debug.Print Loc.Address
+                            Set Loc = .FindNext(Loc)
+                        End If
+                    
+                    Else
+
+                        If Loc.Column = fullRange1.Column Then
+
+                            Debug.Print Loc.Address
+
+                            ReDim Preserve iData1(x)
+                            iData1(x) = Application.WorksheetFunction.Transpose(Range(Cells(loc.Row, loc.Column +1), Cells(loc.Row, loc.Column + mDay)))
+                            
+                            x = x + 1
+
+                            Set Loc = .FindNext(Loc)
+                            count = count + 1
+                        Else
+                            Debug.Print Loc.Address
+                            Set Loc = .FindNext(Loc)
+                        End If
+
+                    End if
+
+                Loop
+            
+            End If
+        
+        End With
+
+        Set Loc = Nothing
+    
+    Next iNum
+
+' https://excelchamps.com/vba/arrays/sort-array/
+' This link can help with making a sorter
+' Most important thing now is to find the indexes of the 
 
 End sub
 
