@@ -359,6 +359,7 @@ Private Sub CmdSegments_Click() 'Get the names of the segments.
         If cel.Value <> "" Then
             Debug.Print cel.Value
             Me.segmentbx.AddItem cel.Value
+            Me.segmentSortbx.AddItem cel.Value
         End If
     Next
 
@@ -515,7 +516,7 @@ Private sub main()
     Dim iDays() as Variant, iData1() as Variant
     Dim iTerm() As Variant
     Dim Loc As Range
-    dim mDay as long
+    dim mDay as long, i as long, y as long
     Dim x As Integer, count As Integer
     Dim iNum As Integer, iNum1 As Integer, iNum2 As Integer
     Dim match_1 As Variant, match_2 As Variant, match_3 As Variant
@@ -620,7 +621,7 @@ Private sub main()
         End With
         
         Set Loc = Nothing
-        set x = nothing
+        x = 0
 
         With ws1.UsedRange
 
@@ -681,9 +682,60 @@ Private sub main()
     
     Next iNum
 
-' https://excelchamps.com/vba/arrays/sort-array/
-' This link can help with making a sorter
-' Most important thing now is to find the indexes of the 
+    Dim strFind As Variant
+    Dim strStored As Variant
+    Dim arrTemp As Variant, arrTemp1 As Variant
+    Dim arrNew As Variant, arrNew1 As Variant
+    
+    i = 0
+    
+    ' Start sorting array
+    For i = 0 To Me.segmentbx.ListCount - 1
+        strFind = Me.segmentbx.List(i)
+
+        For y = 0 To Me.segmentSortbx.ListCount - 1
+            
+            strStored = Me.segmentSortbx.List(y)
+            
+            Debug.Print "L: " & i & " " & Me.segmentbx.List(i); " | R: " & y & " " & Me.segmentSortbx.List(y)
+
+            If strFind = strStored Then
+            
+                If i = y Then
+                
+                    Debug.Print "-- Level & Name Match: " & strFind & " = " & i
+                
+                Else
+
+                    Debug.Print "- Name Match: " & strFind & " : " & i & "-" & y
+                    Debug.Print "- reordering... "
+                    
+                    arrTemp = iData(y)
+                    arrNew = iData(i)
+    
+                    arrTemp1 = iData1(y)
+                    arrNew1 = iData1(i)
+    
+                    iData(y) = arrNew
+                    iData(i) = arrTemp
+    
+                    iData1(y) = arrNew1
+                    iData1(i) = arrTemp1
+                
+                End If
+            
+            Else
+
+                'Do nothing
+            
+            End If
+        
+        Next y
+        
+        y = 0
+
+    Next i
+
 
 End sub
 
