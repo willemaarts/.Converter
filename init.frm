@@ -15,12 +15,17 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
+' GENERAL TODO's 
+'---------------------------------------------------------------------------------------------------------
+'// TODO Find a way when there is only ADR and no REV
+
 ' wb = Converter file | wb1 = Client | wb2 = Juyo
 Public wb As Workbook, wb1 As Workbook, wb2 as Workbook
 Public ws As Worksheet, ws1 As Worksheet, ws2 as Workbook
 Public rng As Range
 Public cel As Range
 Public Y as Integer
+Public lastColumn As Long
 
 Public fullRange As Range, fullRange1 as range
 
@@ -82,10 +87,6 @@ Private Sub UserForm_Initialize()
     ' Will clear the last used workbook names.
     Range("C2").Value = ""
     Range("D2").Value = ""
-    
-    ' //TODO Can deleted after debuggin is done
-    fileC.ListIndex = 0
-    fileJ.ListIndex = 1
 
     me.label13.Top =  1000
     
@@ -105,7 +106,7 @@ End Sub
 
 Private Sub CmdLoad_Click() 'This will start the first process.
 
-    Dim lastColumn As Long
+    'Dim lastColumn As Long
     Dim iNum As Integer
     Dim iSegment() As Variant
 
@@ -154,7 +155,6 @@ Private Sub CmdLoad_Click() 'This will start the first process.
     Next ws1
     
     '// TODO Let the userform expand itself
-    '// TODO Load segments used in Juyo
 
     ' Here the process of getting the files from Juyo will start
     ' Later on the user can match his segments with the segments used in Juyo
@@ -372,7 +372,7 @@ Private Sub CmdSegments_Click() 'Get the names of the segments.
     Me.Show
 
 End Sub  
-'// TODO Find a way when there is only ADR and no REV
+
 Private Sub cmdTerminology_Click() 'This will get the names of RN and REV
 
     'Temporarily Hide Userform
@@ -444,9 +444,12 @@ Private Sub CmdStoreSegments_Click() ' This will store the segments
 
     lastrow = Cells(Rows.count, "B").End(xlUp).Row
 
-    '//FIXME is nothing is loaded, the column will be deleted.
-    Range("B2:B" & lastrow).ClearContents
-    Range("B2").Select
+    If lastrow <> 1 then
+
+        Range("B2:B" & lastrow).ClearContents
+        Range("B2").Select
+    
+    End if
     
     For x = 0 To Me.segmentbx.ListCount - 1
         Me.segmentbx.Selected(x) = True
@@ -509,15 +512,17 @@ Private sub main()
     Dim StartTime   As Double
     Dim SecondsElapsed As Double
 
-    'Dim x as long
     Dim iData() As Variant
     Dim iSegments() As Variant
     Dim iMonths() As Variant
     Dim iDays() as Variant, iData1() as Variant
     Dim iTerm() As Variant
+    Dim iSort() as Variant
     Dim Loc As Range
-    dim mDay as long, i as long, y as long
-    Dim x As Integer, count As Integer
+    Dim strMonth As Variant
+    dim mDay as long, i as long, y as long, l as long
+    Dim r As Long
+    Dim x As Integer, count As Integer, b as Integer
     Dim iNum As Integer, iNum1 As Integer, iNum2 As Integer
     Dim match_1 As Variant, match_2 As Variant, match_3 As Variant
 
@@ -530,6 +535,7 @@ Private sub main()
     iMonths() = sheetsBx.List
     iTerm() = terminologybx.List
     iDays() = monthsBx.List
+    iSort() = segmentSortbx.list
 
     With wb1
         .Activate
@@ -567,13 +573,13 @@ Private sub main()
 
         With ws1.UsedRange
 
-            Set Loc = .Cells.Find(What:=iTerm(0, 0)) 'Change to variable (iNum1,0)
+            Set Loc = .Cells.Find(What:=iTerm(0, 0))
             
             count = 0
 
             If Not Loc Is Nothing Then
                 
-                Do Until count = UBound(iSegments) + 1
+                Do Until count = UBound(iSegments)  + 1
                     
                     if OptionButton6 = true then
                     'Columns stored, so loc and fullrange1 must be row
@@ -621,11 +627,10 @@ Private sub main()
         End With
         
         Set Loc = Nothing
-        x = 0
 
         With ws1.UsedRange
 
-            Set Loc = .Cells.Find(What:=iTerm(1, 0)) 'Change to variable (iNum1,0)
+            Set Loc = .Cells.Find(What:=iTerm(1, 0))
             
             count = 0
 
@@ -640,10 +645,10 @@ Private sub main()
                             
                             Debug.Print Loc.Address
                             
-                            ReDim Preserve iData1(x)
-                            iData1(x) = Application.WorksheetFunction.Transpose(Range(Cells(loc.Row + 1, loc.Column), Cells(loc.Row + mDay, loc.Column)))
+                            ReDim Preserve iData1(b)
+                            iData1(b) = Application.WorksheetFunction.Transpose(Range(Cells(loc.Row + 1, loc.Column), Cells(loc.Row + mDay, loc.Column)))
                                     
-                            x = x + 1
+                            b = b + 1
                             
                             Set Loc = .FindNext(Loc)
                             count = count + 1
@@ -658,10 +663,10 @@ Private sub main()
 
                             Debug.Print Loc.Address
 
-                            ReDim Preserve iData1(x)
-                            iData1(x) = Application.WorksheetFunction.Transpose(Range(Cells(loc.Row, loc.Column +1), Cells(loc.Row, loc.Column + mDay)))
+                            ReDim Preserve iData1(b)
+                            iData1(b) = Application.WorksheetFunction.Transpose(Range(Cells(loc.Row, loc.Column +1), Cells(loc.Row, loc.Column + mDay)))
                             
-                            x = x + 1
+                            b = b + 1
 
                             Set Loc = .FindNext(Loc)
                             count = count + 1
@@ -686,56 +691,154 @@ Private sub main()
     Dim strStored As Variant
     Dim arrTemp As Variant, arrTemp1 As Variant
     Dim arrNew As Variant, arrNew1 As Variant
-    
-    i = 0
-    
-    ' Start sorting array
-    For i = 0 To Me.segmentbx.ListCount - 1
-        strFind = Me.segmentbx.List(i)
 
-        For y = 0 To Me.segmentSortbx.ListCount - 1
-            
-            strStored = Me.segmentSortbx.List(y)
-            
-            Debug.Print "L: " & i & " " & Me.segmentbx.List(i); " | R: " & y & " " & Me.segmentSortbx.List(y)
+    dim temp as Variant
+    dim a as long
+    
+    i = 0    
+    iNum = 0
+    a = 0
 
-            If strFind = strStored Then
-            
-                If i = y Then
+    For iNum = 0 To UBound(iMonths)
+    
+        For i = 0 To Me.segmentbx.ListCount - 1
+        
+            strFind = Me.segmentbx.List(i)
+
+            For y = 0 To Me.segmentSortbx.ListCount - 1
                 
-                    Debug.Print "-- Level & Name Match: " & strFind & " = " & i
+                strStored = Me.segmentSortbx.List(y)
+                
+                Debug.Print "L: " & i & " " & Me.segmentbx.List(i); " | R: " & y & " " & Me.segmentSortbx.List(y)
+
+                If strFind = strStored Then
+                
+                    If i = y Then
+                    
+                        Debug.Print "-- Level & Name Match: " & strFind & " = " & i
+                    
+                    Else
+
+                        Debug.Print "- Name Match: " & strFind & " : " & i & "-" & y
+                        Debug.Print "- reordering... "
+                        
+                        arrTemp = iData(y + a)
+                        arrNew = iData(i + a)
+        
+                        arrTemp1 = iData1(y + a)
+                        arrNew1 = iData1(i + a)
+        
+                        iData(y + a) = arrNew
+                        iData(i + a) = arrTemp
+        
+                        iData1(y + a) = arrNew1
+                        iData1(i + a) = arrTemp1
+
+                        temp = Me.segmentSortbx.List(i)
+
+                        Me.segmentSortbx.List(i) = me.segmentbx.List(i)
+                        Me.segmentSortbx.List(y) = temp
+                    
+                    End If
                 
                 Else
 
-                    Debug.Print "- Name Match: " & strFind & " : " & i & "-" & y
-                    Debug.Print "- reordering... "
-                    
-                    arrTemp = iData(y)
-                    arrNew = iData(i)
-    
-                    arrTemp1 = iData1(y)
-                    arrNew1 = iData1(i)
-    
-                    iData(y) = arrNew
-                    iData(i) = arrTemp
-    
-                    iData1(y) = arrNew1
-                    iData1(i) = arrTemp1
+                    'Do nothing
                 
                 End If
             
-            Else
-
-                'Do nothing
+            Next y
             
-            End If
-        
-        Next y
-        
-        y = 0
+            y = 0
 
-    Next i
+        Next i
 
+        If iNum = 0 Then 
+            a = Me.segmentSortbx.ListCount
+        Else
+            a = a + Me.segmentSortbx.ListCount
+        End If
+
+        segmentSortbx.clear
+        Inum2 = 0
+
+        for iNum2 = 0 to UBound(iSort)
+            me.segmentSortbx.AddItem iSort(inum2, 0)
+        next
+
+    Next iNum
+
+    wb.Activate
+    Sheets("outP").Select
+    Cells.Clear
+    
+    x = 0
+    l = 1
+    r = 1
+    y = 0
+
+    For x = 0 To UBound(iData)
+
+        If y = Me.segmentbx.ListCount Then
+            r = r + UBound(iData(x - 1))
+            l = 1
+            y = 0
+        End If
+
+        If OptionButton6 = True Then
+            Range(Cells(r, l), Cells(r, l)).Resize(UBound(iData(x)), 1).Value = Application.Transpose(iData(x))
+            Range(Cells(r, l + 1), Cells(r, l + 1)).Resize(UBound(iData1(x)), 1).Value = Application.Transpose(iData1(x))
+        Else
+            Range(Cells(r, l), Cells(r, l)).Resize(UBound(iData(x)), 1).Value = (iData(x))
+            Range(Cells(r, l + 1), Cells(r, l + 1)).Resize(UBound(iData1(x)), 1).Value = (iData1(x))
+        End If
+        
+        l = l + 2
+        y = y + 1
+
+    Next x
+
+    Dim sourceColumn As Range, targetColumn As Range
+    Dim emptyRow As Long
+
+    emptyRow = WorksheetFunction.CountA(Range("A:A"))
+    Range(Cells(1, 1), Cells(emptyRow, lastColumn)).Select
+
+    Set sourceColumn = wb.ActiveSheet.Range(Cells(1,1), cells(emptyRow, lastColumn))
+    Set targetColumn = wb2.Worksheets(1).Range("B2")
+
+    with selection
+        .Copy Destination:=targetColumn
+        .ClearContents
+    end With
+
+    Select Case Me.monthsBx.List(0)
+        Case "january": strMonth = "1/1/2022"
+        Case "february": strMonth = "2/1/2022"
+        Case "march": strMonth = "3/1/2022"
+        Case "april": strMonth = "4/1/2022"
+        Case "may": strMonth = "5/1/2022"
+        Case "june": strMonth = "6/1/2022"
+        Case "july": strMonth = "7/1/2022"
+        Case "august": strMonth = "8/1/2022"
+        Case "september": strMonth = "9/1/2022"
+        Case "october": strMonth = "10/1/2022"
+        Case "november": strMonth = "11/1/2022"
+        Case "december": strMonth = "12/1/2022"
+    End Select
+
+    wb2.Activate
+    With Range("A2")
+        .Select
+        .NumberFormat = "yyyy-mm-dd;@"
+        .FormulaR1C1 = strMonth
+        .AutoFill Destination:=Range("A2:A" & emptyRow + 1)
+    End With
+
+    wb.Activate
+
+    SecondsElapsed = Round(Timer - StartTime, 6)
+    Debug.Print "Ran in: " & SecondsElapsed & " seconds"
 
 End sub
 
