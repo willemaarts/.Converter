@@ -13,13 +13,20 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Option Explicit
 
 ' GENERAL TODO's 
 '---------------------------------------------------------------------------------------------------------
 '// TODO Find a way when there is only ADR and no REV
+'// TODO Lead year implement
+'// TODO userfrom resize when mac user.
 
-' wb = Converter file | wb1 = Client | wb2 = Juyo
+'---------------------------------------------------------------------------------------------------------
+' FOR Rick Cuijpers or HMSM:!!!
+'
+' ctrl + F ("private sub main()"), to actual process of transmorming the data
+'---------------------------------------------------------------------------------------------------------
+Option Explicit
+
 Public wb As Workbook, wb1 As Workbook, wb2 as Workbook
 Public ws As Worksheet, ws1 As Worksheet, ws2 as Workbook
 Public rng As Range
@@ -31,8 +38,6 @@ Public fullRange As Range, fullRange1 as range
 
 Const err1 As Variant = vbNewLine & vbNewLine & _
                         "Workbook name is not the same. Please try again."
-
-' Ctrl + '/' to quicly comment
 
 Private Sub UserForm_Initialize()
 
@@ -67,7 +72,6 @@ Private Sub UserForm_Initialize()
     If err.Number <> 0 Then
         If err.Number = 9 Then
             MsgBox err.Number & " | " & err.Description & err1
-            debug.print "3"
             err.Clear
             Exit Sub
         End If
@@ -562,6 +566,7 @@ Private sub main()
         ws1.Visible = xlSheetVisible
         ws1.Select
 
+        ' //FIXME Implement a leap year
         Select Case iDays(iNum, 0)
             Case "january", "march", "may", "july", "august", "october", "december": mDay = 31
             Case "april", "june", "september", "november": mDay = 30
