@@ -16,14 +16,19 @@ Attribute VB_Exposed = False
 
 ' GENERAL TODO's 
 '---------------------------------------------------------------------------------------------------------
-'// TODO Find a way when there is only ADR and no REV
-'// TODO Lead year implement
+'// TODO Find a way when there is only ADR and no REV.
+'// TODO Make a storage process, so the next usage will be faster. (Save everything, also fullRange, etc.)
+'// IDEA Make a input sheet for the users.
+'// TODO Lead year implement.
 '// TODO userfrom resize when mac user.
+'// TODO Make the UI better, and start on UX (let user go step by step)
+'// IDEA for maching the segments with juyo (use fuzzy months)
+'// BUG what if when segments are placed into inactive, the sort listbox should also be without those segments.
 
 '---------------------------------------------------------------------------------------------------------
-' FOR Rick Cuijpers or HMSM:!!!
+' !!! FOR Rick Cuijpers or HMSM:
 '
-' ctrl + F ("private sub main()"), to actual process of transmorming the data
+' ctrl + F = "private sub main()", to see the actual process of transforming the data
 '---------------------------------------------------------------------------------------------------------
 Option Explicit
 
@@ -32,6 +37,7 @@ Public ws As Worksheet, ws1 As Worksheet, ws2 as Workbook
 Public rng As Range
 Public cel As Range
 Public Y as Integer
+Public sYear as Variant
 Public lastColumn As Long
 
 Public fullRange As Range, fullRange1 as range
@@ -130,6 +136,9 @@ Private Sub CmdLoad_Click() 'This will start the first process.
     ' Stores the files names, for later porpures
     Range("D2").Value = fileJ.Value
     Range("C2").Value = fileC.Value
+    
+    ' Stores the year for later use
+    sYear = yearBx.value
 
     ' Clears the last used segments, if any.
     sheetsBx.Clear
@@ -243,6 +252,7 @@ Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
     sheetsBx.Clear
     
     'Dictonary for the months
+    '// FIXME when 'fcst' is in name, October has higher points. fcst must be deleted in string.
     fuzzyMonths = Array("may", "May", "May", "may", _
                     "july", "July", "Jul", "jul", _
                     "june", "June", "Jun", "jun", _
@@ -255,16 +265,15 @@ Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
                     "december", "December", "Dec", "dec", _
                     "november", "November", "Nov", "nov", _               
                     "september", "September", "Sep", "sep", "Sept", "sept")
-                    
-                    
-                    
-
+                
     ' Here the selected segments that where selected will be added again
     ' Futhermore, with Fuzzy Seach, the months will be added.
     On Error Resume Next
     For iNum = 1 To UBound(iSegments)
         Me.sheetsBx.AddItem iSegments(iNum)
 
+        'E.g. If InStr(lookup_value, mid(fcst), i, 1)) > 0 Then delete mid fct value
+        
         lookup_value = iSegments(iNum)
 
         For Each item In fuzzyMonths
@@ -324,6 +333,7 @@ Private Sub CmdSheets_click() 'Here the non-selected sheets will be deleted.
     
     Set ws1 = wb1.Worksheets(iSegments(1))
 
+    ' //FIXME Make this more UI friendly to let the user know
     if me.segmentJuyobx.ListCount <> me.segmentbx.ListCount then
         me.label13.ForeColor = RGB(255, 0, 0) ' red
     Else
@@ -519,13 +529,14 @@ Private sub main()
     Dim iData() As Variant
     Dim iSegments() As Variant
     Dim iMonths() As Variant
-    Dim iDays() as Variant, iData1() as Variant
+    Dim iDays() as Variant
+    Dim iData1() as Variant
     Dim iTerm() As Variant
     Dim iSort() as Variant
+
     Dim Loc As Range
     Dim strMonth As Variant
-    dim mDay as long, i as long, y as long, l as long
-    Dim r As Long
+    dim mDay as long, i as long, y as long, l as long, r As Long
     Dim x As Integer, count As Integer, b as Integer
     Dim iNum As Integer, iNum1 As Integer, iNum2 As Integer
     Dim match_1 As Variant, match_2 As Variant, match_3 As Variant
@@ -566,7 +577,6 @@ Private sub main()
         ws1.Visible = xlSheetVisible
         ws1.Select
 
-        ' //FIXME Implement a leap year
         Select Case iDays(iNum, 0)
             Case "january", "march", "may", "july", "august", "october", "december": mDay = 31
             Case "april", "june", "september", "november": mDay = 30
@@ -576,6 +586,13 @@ Private sub main()
                 mDay = 31 
         End Select
 
+        ' //TEST is this leap year working.
+        If iDays(iNum, 0) = "february" then
+            if sYear = 2024 or sYear = 2028 then
+                mDay = mDay + 1
+            end if
+        end if
+        
         With ws1.UsedRange
 
             Set Loc = .Cells.Find(What:=iTerm(0, 0))
@@ -818,18 +835,18 @@ Private sub main()
     end With
 
     Select Case Me.monthsBx.List(0)
-        Case "january": strMonth = "1/1/2022"
-        Case "february": strMonth = "2/1/2022"
-        Case "march": strMonth = "3/1/2022"
-        Case "april": strMonth = "4/1/2022"
-        Case "may": strMonth = "5/1/2022"
-        Case "june": strMonth = "6/1/2022"
-        Case "july": strMonth = "7/1/2022"
-        Case "august": strMonth = "8/1/2022"
-        Case "september": strMonth = "9/1/2022"
-        Case "october": strMonth = "10/1/2022"
-        Case "november": strMonth = "11/1/2022"
-        Case "december": strMonth = "12/1/2022"
+        Case "january": strMonth = "1/1/" & sYear
+        Case "february": strMonth = "2/1/" & sYear
+        Case "march": strMonth = "3/1/" & sYear
+        Case "april": strMonth = "4/1/" & sYear
+        Case "may": strMonth = "5/1/" & sYear
+        Case "june": strMonth = "6/1/" & sYear
+        Case "july": strMonth = "7/1/" & sYear
+        Case "august": strMonth = "8/1/" & sYear
+        Case "september": strMonth = "9/1/" & sYear
+        Case "october": strMonth = "10/1/" & sYear
+        Case "november": strMonth = "11/1/" & sYear
+        Case "december": strMonth = "12/1/" & sYear
     End Select
 
     wb2.Activate
@@ -844,6 +861,8 @@ Private sub main()
 
     SecondsElapsed = Round(Timer - StartTime, 6)
     Debug.Print "Ran in: " & SecondsElapsed & " seconds"
+
+    Me.Show
 
 End sub
 

@@ -5,8 +5,7 @@ Sub FuzzySeach()
     Dim lookup_value As String
     Dim fuzzyMonths() As Variant
     
-    
-    
+    '// FIXME when 'fcst' is in name, October has higher points. fcst must be deleted in string.
     fuzzyMonths = Array("may", "May", "May", "may", _
                     "july", "July", "Jul", "jul", _
                     "june", "June", "Jun", "jun", _
@@ -20,7 +19,7 @@ Sub FuzzySeach()
                     "november", "November", "Nov", "nov", _               
                     "september", "September", "Sep", "sep", "Sept", "sept")
 
-    lookup_value = "DDecember 2022"
+    lookup_value = "Nov fcst"
 
     For Each item In fuzzyMonths
     
